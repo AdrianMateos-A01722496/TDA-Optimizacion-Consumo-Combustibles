@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Topológico de Consumo de Combustible - SLB México</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .navbar-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .section-fade {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .section-fade.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .mapper-container {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white navbar-shadow sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">TDA - Análisis de Combustible</h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="#intro" class="text-gray-600 hover:text-blue-600 transition-colors">Introducción</a>
+                    <a href="#metodologia" class="text-gray-600 hover:text-blue-600 transition-colors">Metodología</a>
+                    <a href="#mapper" class="text-gray-600 hover:text-blue-600 transition-colors">Mapper</a>
+                    <a href="#feature-engineering" class="text-gray-600 hover:text-blue-600 transition-colors">Feature Eng.</a>
+                    <a href="#predicciones" class="text-gray-600 hover:text-blue-600 transition-colors">Predicciones</a>
+                    <a href="#conclusiones" class="text-gray-600 hover:text-blue-600 transition-colors">Conclusiones</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="intro" class="gradient-bg text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-5xl font-bold mb-6">
+                Análisis Topológico de Datos para la<br>
+                <span class="text-yellow-300">Optimización de Consumo de Combustible</span>
+            </h1>
+            <p class="text-xl mb-8 max-w-3xl mx-auto opacity-90">
+                Aplicación de técnicas de Geometría y Topología para responder a las necesidades de SLB México 
+                en sus problemáticas de consumo y emisiones de CO2
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 max-w-2xl mx-auto">
+                <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6">
+                    <div class="text-3xl font-bold mb-2">36,353</div>
+                    <div class="text-sm opacity-80">Registros Edenred</div>
+                </div>
+                <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6">
+                    <div class="text-3xl font-bold mb-2">2021-2024</div>
+                    <div class="text-sm opacity-80">Periodo de Análisis</div>
+                </div>
+            </div>
+            <div class="mt-8">
+                <h1 class="text-2xl font-bold mb-2">Integrantes</h1>
+                <p class="text-2xl max-w-3xl mx-auto opacity-90 space-y-3">
+                    <div>Adrián Mateos Garza | A01722496</div>
+                    <div>Antonio Pena Lozano | A01722688</div>
+                    <div>Rogelio Coria López | A01733314</div>
+                    <div>Alfonso Elizondo Partida | A01285151</div>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problemáticas -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Problemáticas Principales</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Enfrentamos desafíos complejos en la gestión de combustible de la flota de SLB México
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 section-fade">
+                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Identificar Patrones</h3>
+                    <p class="text-gray-600 text-sm">Detectar tendencias en el consumo de combustible de la flota</p>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-6 section-fade">
+                    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Predecir Consumo</h3>
+                    <p class="text-gray-600 text-sm">Anticipar el consumo futuro de combustible</p>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6 section-fade">
+                    <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Optimizar Costos</h3>
+                    <p class="text-gray-600 text-sm">Mejorar la eficiencia y reducir desviaciones</p>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6 section-fade">
+                    <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Patrones por Tipo</h3>
+                    <p class="text-gray-600 text-sm">Analizar consumo por vehículo y estación</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Metodología -->
+    <section id="metodologia" class="py-16 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    🔬 Metodología Aplicada
+                </h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Proceso sistemático de análisis topológico y machine learning aplicado a la optimización 
+                    del consumo de combustible
+                </p>
+            </div>
+            
+            <div class="max-w-6xl mx-auto">
+                <!-- Pasos de la metodología -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-8 relative">
+                    
+                    <!-- Paso 1: Análisis Exploratorio -->
+                    <div class="relative">
+                        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200 h-full flex flex-col transform hover:scale-105 transition-transform duration-300">
+                            <div class="text-center mb-4">
+                                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-3xl">📊</span>
+                                </div>
+                                <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">1</div>
+                                <h3 class="text-lg font-bold text-gray-900">Análisis Exploratorio</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center flex-grow">
+                                Carga, limpieza y exploración del dataset de 36,000+ registros de consumo de combustible.
+                            </p>
+                        </div>
+                        <!-- Flecha derecha (oculta en mobile) -->
+                        <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                            <div class="w-8 h-8 bg-white border-2 border-blue-300 rounded-full flex items-center justify-center shadow-md">
+                                <span class="text-blue-600 font-bold">→</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Mapper -->
+                    <div class="relative">
+                        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-green-200 h-full flex flex-col transform hover:scale-105 transition-transform duration-300">
+                            <div class="text-center mb-4">
+                                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-3xl">🗺️</span>
+                                </div>
+                                <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">2</div>
+                                <h3 class="text-lg font-bold text-gray-900">Aplicación Mapper</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center flex-grow">
+                                Construcción de 23 clusters topológicos usando variables categóricas y PCA 2D.
+                            </p>
+                        </div>
+                        <!-- Flecha derecha -->
+                        <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                            <div class="w-8 h-8 bg-white border-2 border-green-300 rounded-full flex items-center justify-center shadow-md">
+                                <span class="text-green-600 font-bold">→</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 3: Feature Engineering -->
+                    <div class="relative">
+                        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200 h-full flex flex-col transform hover:scale-105 transition-transform duration-300">
+                            <div class="text-center mb-4">
+                                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-3xl">🔧</span>
+                                </div>
+                                <div class="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">3</div>
+                                <h3 class="text-lg font-bold text-gray-900">Feature Engineering</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center flex-grow">
+                                Creación de 7 variables avanzadas: temporales, interacciones, lag features y topológicas.
+                            </p>
+                        </div>
+                        <!-- Flecha derecha -->
+                        <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                            <div class="w-8 h-8 bg-white border-2 border-purple-300 rounded-full flex items-center justify-center shadow-md">
+                                <span class="text-purple-600 font-bold">→</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 4: Optimización -->
+                    <div class="relative">
+                        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-orange-200 h-full flex flex-col transform hover:scale-105 transition-transform duration-300">
+                            <div class="text-center mb-4">
+                                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-3xl">🤖</span>
+                                </div>
+                                <div class="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">4</div>
+                                <h3 class="text-lg font-bold text-gray-900">Optimización</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center flex-grow">
+                                Grid search en RandomForest, GradientBoosting y XGBoost con validación temporal.
+                            </p>
+                        </div>
+                        <!-- Flecha derecha -->
+                        <div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                            <div class="w-8 h-8 bg-white border-2 border-orange-300 rounded-full flex items-center justify-center shadow-md">
+                                <span class="text-orange-600 font-bold">→</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 5: Evaluación -->
+                    <div class="relative">
+                        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-red-200 h-full flex flex-col transform hover:scale-105 transition-transform duration-300">
+                            <div class="text-center mb-4">
+                                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-3xl">📈</span>
+                                </div>
+                                <div class="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">5</div>
+                                <h3 class="text-lg font-bold text-gray-900">Evaluación</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center flex-grow">
+                                Validación del modelo final: RandomForest con R² = 0.7881 y métricas robustas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado final -->
+                <div class="mt-12 text-center section-fade">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white shadow-2xl">
+                        <h3 class="text-2xl font-bold mb-4">🎯 Resultado Final</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="transform hover:scale-110 transition-transform duration-300">
+                                <div class="text-4xl font-bold">R² = 0.7881</div>
+                                <div class="text-sm opacity-90">Precisión del Modelo</div>
+                            </div>
+                            <div class="transform hover:scale-110 transition-transform duration-300">
+                                <div class="text-4xl font-bold">7</div>
+                                <div class="text-sm opacity-90">Features Engineered</div>
+                            </div>
+                            <div class="transform hover:scale-110 transition-transform duration-300">
+                                <div class="text-4xl font-bold">23</div>
+                                <div class="text-sm opacity-90">Clusters Topológicos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mapper Section -->
+    <section id="mapper" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Análisis Topológico con Mapper</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Visualización topológica de los datos de Edenred usando el algoritmo Mapper para identificar 
+                    estructuras y patrones ocultos en el consumo de combustible
+                </p>
+            </div>
+
+            <!-- Explicación de la contribución a predicciones -->
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-8 mb-8 section-fade">
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-blue-900 mb-3">🔗 Mapper como Variable Predictora</h3>
+                        <p class="text-blue-800 mb-3">
+                            El algoritmo Mapper no solo revela la estructura topológica de los datos, sino que también genera clusters 
+                            que capturan patrones de comportamiento similares en el consumo de combustible. Estos clusters se utilizan 
+                            como variables predictoras en nuestro modelo de regresión.
+                        </p>
+                        <p class="text-blue-800 text-sm">
+                            <strong>Ventaja clave:</strong> Los clusters topológicos preservan la continuidad del espacio de datos, 
+                            permitiendo que el modelo capture relaciones no lineales y dependencias complejas que métodos tradicionales 
+                            de clustering podrían pasar por alto, mejorando significativamente la precisión predictiva.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl card-shadow p-6 section-fade">
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Mapper sobre categorías de Edenred</h3>
+                    <p class="text-gray-600">
+                        El gráfico siguiente muestra la estructura topológica de los datos, donde cada nodo representa 
+                        un cluster de transacciones similares y las conexiones revelan la continuidad en el espacio de características.
+                    </p>
+                </div>
+                
+                <!-- Container para el iframe del mapper -->
+                <div class="mapper-container bg-gray-50">
+                    <iframe 
+                        src="final_presentation_data/edenred_mapper_final.html" 
+                        width="100%" 
+                        height="800"
+                        frameborder="0"
+                        class="rounded-lg">
+                    </iframe>
+                </div>
+
+                <!-- Interpretación del Mapper -->
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h4 class="text-lg font-semibold text-blue-900 mb-3">🔍 Interpretación Topológica</h4>
+                        <ul class="text-sm text-blue-800 space-y-2">
+                            <li>• <strong>Nodos:</strong> Clusters de transacciones similares</li>
+                            <li>• <strong>Conexiones:</strong> Continuidad topológica entre grupos</li>
+                            <li>• <strong>Colores:</strong> Valores de función de filtro aplicada</li>
+                            <li>• <strong>Estructura:</strong> Patrones ocultos de consumo</li>
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <h4 class="text-lg font-semibold text-green-900 mb-3">📊 Insights para Predicción</h4>
+                        <ul class="text-sm text-green-800 space-y-2">
+                            <li>• Segmentación natural de comportamientos</li>
+                            <li>• Variables categóricas topológicamente consistentes</li>
+                            <li>• Reducción de dimensionalidad inteligente</li>
+                            <li>• Captura de relaciones no lineales</li>
+                        </ul>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                        <h4 class="text-lg font-semibold text-purple-900 mb-3">🎯 Aplicación en Regresión</h4>
+                        <ul class="text-sm text-purple-800 space-y-2">
+                            <li>• Clusters como features categóricas</li>
+                            <li>• Mejora en precisión predictiva</li>
+                            <li>• Detección automática de outliers</li>
+                            <li>• Robustez ante ruido en datos</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Engineering Section -->
+    <section id="feature-engineering" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    🔧 Feature Engineering Avanzado
+                </h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Creación de variables que capturan patrones complejos en el consumo de combustible
+                </p>
+            </div>
+
+            <div class="max-w-6xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg p-8 section-fade">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature</th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Beneficio</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Recorrido_x_Rendimiento</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Interacción</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Multiplicación de recorrido por rendimiento esperado</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Captura relaciones no lineales entre variables</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Eficiencia_esperada</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Ratio</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Rendimiento dividido por recorrido</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Mide la eficiencia teórica esperada</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Recorrido_log</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Transformación</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Logaritmo del recorrido</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Reduce el impacto de valores extremos</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Rendimiento_squared</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Transformación</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Rendimiento al cuadrado</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Captura relaciones cuadráticas</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">cluster_distance</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Topológica</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Distancia al centroide del cluster</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Mide similitud con patrones conocidos</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">cluster_size</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Topológica</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Tamaño del cluster asignado</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Indica robustez del patrón</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">mapper_cluster</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Categórica</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Cluster asignado por Mapper</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Identifica patrones de comportamiento</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Predicciones Section -->
+    <section id="predicciones" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    📊 Serie Temporal y Predicciones
+                </h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Visualización de la serie temporal real vs predicciones del modelo optimizado
+                </p>
+            </div>
+            
+            <div class="bg-white rounded-2xl card-shadow p-8 section-fade">
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Serie Temporal: Rendimiento Real vs Predicho</h3>
+                    <p class="text-gray-600">
+                        Comparación temporal del modelo que incorpora información topológica de los clusters de Mapper
+                    </p>
+                </div>
+                <div class="h-96">
+                    <canvas id="timeSeriesChart"></canvas>
+                </div>
+
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                    <div class="bg-blue-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-blue-600">0.7881</div>
+                        <div class="text-sm text-blue-800">R² Score</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-green-600">2.1413</div>
+                        <div class="text-sm text-green-800">MSE</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-purple-600">1.4633</div>
+                        <div class="text-sm text-purple-800">RMSE</div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-orange-600">1.0706</div>
+                        <div class="text-sm text-orange-800">MAE</div>
+                    </div>
+                </div>
+                
+                <!-- Calculadora de Predicción Interactiva -->
+                <div class="mt-12 pt-8 border-t-2 border-gray-300">
+                    <h4 class="text-2xl font-bold text-gray-900 mb-6 text-center">🔮 Calculadora Predictiva Interactiva</h4>
+                    <p class="text-gray-600 text-center mb-8">
+                        Ingresa los datos de una nueva transacción para predecir el rendimiento de combustible usando nuestro modelo topológico
+                    </p>
+                    
+                    <div class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-200 rounded-2xl p-8">
+                        <form id="predictionForm" class="space-y-6">
+                            <!-- Variables Categóricas -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Id Región</label>
+                                    <select id="id_region" name="id_region" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Cliente</label>
+                                    <select id="cliente" name="cliente" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">División</label>
+                                    <select id="division" name="division" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">BL</label>
+                                    <select id="bl" name="bl" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mercancía</label>
+                                    <select id="mercancia" name="mercancia" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Conductor</label>
+                                    <select id="conductor" name="conductor" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Vehículo</label>
+                                    <select id="vehiculo_corto" name="vehiculo_corto" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Variables Numéricas -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Recorrido Esperado (km)</label>
+                                    <input 
+                                        type="number" 
+                                        id="recorrido" 
+                                        name="recorrido" 
+                                        min="1" 
+                                        max="10000" 
+                                        step="1"
+                                        placeholder="Ej: 300"
+                                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Rendimiento Esperado (km/L)</label>
+                                    <input 
+                                        type="number" 
+                                        id="rendimiento_esperado" 
+                                        name="rendimiento_esperado" 
+                                        min="1" 
+                                        max="50" 
+                                        step="0.1"
+                                        placeholder="Ej: 8.5"
+                                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Botón de Predicción -->
+                            <div class="text-center mt-8">
+                                <button 
+                                    type="submit" 
+                                    id="predictBtn"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+                                >
+                                    🔮 Predecir Rendimiento
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Resultado de la Predicción -->
+                        <div id="predictionResult" class="mt-8 hidden">
+                            <div class="bg-white border-2 border-green-200 rounded-xl p-6 shadow-lg">
+                                <h5 class="text-xl font-bold text-gray-900 mb-4 text-center">📊 Resultado de la Predicción</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                                        <div class="text-3xl font-bold text-blue-600" id="predictedEfficiency">-</div>
+                                        <div class="text-sm text-gray-600">Rendimiento Real Predicho</div>
+                                    </div>
+                                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                                        <div class="text-3xl font-bold text-green-600" id="assignedCluster">-</div>
+                                        <div class="text-sm text-gray-600">Cluster Topológico</div>
+                                    </div>
+                                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                                        <div class="text-3xl font-bold text-purple-600" id="efficiencyClass">-</div>
+                                        <div class="text-sm text-gray-600">Clasificación</div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                                    <p class="text-sm text-gray-700" id="predictionExplanation">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div id="predictionError" class="mt-4 hidden">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <p class="text-red-800" id="errorMessage">-</p>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div id="predictionLoading" class="mt-4 hidden">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                                <div class="inline-flex items-center">
+                                    <svg class="animate-spin h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span class="text-blue-800">Realizando predicción...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modelo y Mapper Section -->
+    <section class="py-16 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    🤖 Caracteristicas del Modelo y Mapper Optimizados
+                </h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Configuración final del modelo Random Forest y Mapper que alcanzó R² = 0.7881
+
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Random Forest -->
+                <div class="bg-white rounded-xl shadow-lg p-8 section-fade">
+                    <div class="flex items-center mb-6">
+                        <span class="text-3xl mr-3">🌳</span>
+                        <h3 class="text-2xl font-bold text-gray-900">Caracteristicas del Modelo Random Forest</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-900 mb-2">Hiperparámetros</h4>
+                            <ul class="text-sm text-blue-800 space-y-2">
+                                <li><strong>• n_estimators:</strong> 375 árboles</li>
+                                <li><strong>• max_depth:</strong> 11 niveles</li>
+                                <li><strong>• min_samples_split:</strong> 11</li>
+                                <li><strong>• min_samples_leaf:</strong> 2</li>
+                                <li><strong>• max_features:</strong> sqrt</li>
+                            </ul>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-900 mb-2">Métricas</h4>
+                            <div class="text-sm text-green-800 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span><strong>R²:</strong></span>
+                                    <span>0.7881</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span><strong>MSE:</strong></span>
+                                    <span>2.1413</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span><strong>RMSE:</strong></span>
+                                    <span>1.4633</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span><strong>MAE:</strong></span>
+                                    <span>1.0706</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mapper -->
+                <div class="bg-white rounded-xl shadow-lg p-8 section-fade">
+                    <div class="flex items-center mb-6">
+                        <span class="text-3xl mr-3">🗺️</span>
+                        <h3 class="text-2xl font-bold text-gray-900">Caracteristicas del Mapper</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-purple-900 mb-2">Configuración</h4>
+                            <ul class="text-sm text-purple-800 space-y-2">
+                                <li><strong>• Cubos:</strong> 5 con 50% overlap</li>
+                                <li><strong>• DBSCAN:</strong> eps=2.5, min_samples=100</li>
+                                <li><strong>• PCA:</strong> 2 componentes principales</li>
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-indigo-900 mb-2">Features Topológicas</h4>
+                            <ul class="text-sm text-indigo-800 space-y-2">
+                                <li><strong>• cluster_distance:</strong> Distancia al centroide</li>
+                                <li><strong>• cluster_size:</strong> Tamaño del cluster</li>
+                                <li><strong>• mapper_cluster:</strong> Asignación categórica</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Conclusiones -->
+    <section id="conclusiones" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 section-fade">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Conclusiones y Próximos Pasos</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Resultados obtenidos y recomendaciones para SLB México
+                </p>
+            </div>
+
+            <!-- Párrafo sobre utilidad del modelo -->
+            <div class="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 rounded-3xl p-8 mb-12 section-fade border border-gray-100 shadow-lg">
+                <div class="flex items-center justify-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">Impacto y Valor para SLB</h3>
+                </div>
+                <div class="prose prose-lg max-w-none text-center">
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        <strong class="text-green-600">Este modelo predictivo representa una herramienta estratégica fundamental</strong> para SLB México en su compromiso con la sostenibilidad y eficiencia operacional. Al predecir con precisión el rendimiento real de combustible antes de cada viaje, el modelo permite tomar <strong class="text-blue-600">decisiones informadas y proactivas</strong> que se traducen directamente en:
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        <div class="bg-white rounded-xl p-4 shadow-sm border">
+                            <div class="text-2xl mb-2">🌱</div>
+                            <strong class="text-green-600">Reducción de CO₂</strong>
+                            <p class="text-sm text-gray-600 mt-2">Optimización de rutas y comportamientos de conducción para minimizar emisiones</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 shadow-sm border">
+                            <div class="text-2xl mb-2">💰</div>
+                            <strong class="text-blue-600">Ahorro de Costos</strong>
+                            <p class="text-sm text-gray-600 mt-2">Identificación de ineficiencias para reducir gastos operacionales</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 shadow-sm border">
+                            <div class="text-2xl mb-2">📊</div>
+                            <strong class="text-purple-600">Toma de Decisiones</strong>
+                            <p class="text-sm text-gray-600 mt-2">Data-driven insights para estrategias operacionales más efectivas</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mt-6">
+                        En un mundo donde las <strong class="text-green-600">metas de carbono neutral</strong> son cada vez más críticas, este modelo posiciona a SLB como líder en innovación tecnológica aplicada a la sostenibilidad, generando un <strong class="text-purple-600">impacto medible</strong> tanto en el medio ambiente como en la rentabilidad del negocio.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 section-fade">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6">🎯 Logros Principales</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 bg-green-500 rounded-full flex-shrink-0 mt-0.5 mr-3"></div>
+                            <div>
+                                <strong class="text-gray-900">Identificación de patrones topológicos</strong>
+                                <p class="text-gray-700 text-sm mt-1">Estructura oculta en los datos de consumo revelada</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 bg-green-500 rounded-full flex-shrink-0 mt-0.5 mr-3"></div>
+                            <div>
+                                <strong class="text-gray-900">Modelo predictivo funcional</strong>
+                                <p class="text-gray-700 text-sm mt-1">Capacidad de predicción del rendimiento de combustible</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 bg-green-500 rounded-full flex-shrink-0 mt-0.5 mr-3"></div>
+                            <div>
+                                <strong class="text-gray-900">Análisis de clusters de comportamiento</strong>
+                                <p class="text-gray-700 text-sm mt-1">Segmentación de tipos de consumo y eficiencia</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl p-8 section-fade">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6">🚀 Próximos Pasos</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 bg-purple-500 rounded-full flex-shrink-0 mt-0.5 mr-3"></div>
+                            <div>
+                                <strong class="text-gray-900">Implementación en tiempo real</strong>
+                                <p class="text-gray-700 text-sm mt-1">Sistema de monitoreo continuo del consumo</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 bg-purple-500 rounded-full flex-shrink-0 mt-0.5 mr-3"></div>
+                            <div>
+                                <strong class="text-gray-900">Optimización de rutas</strong>
+                                <p class="text-gray-700 text-sm mt-1">Integración con sistemas de GPS y logística</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="w-6 h-6 bg-purple-500 rounded-full flex-shrink-0 mt-0.5 mr-3"></div>
+                            <div>
+                                <strong class="text-gray-900">Reducción de emisiones CO2</strong>
+                                <p class="text-gray-700 text-sm mt-1">Estrategias basadas en los insights topológicos</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="gradient-bg text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h3 class="text-2xl font-bold mb-4">Análisis Topológico de Datos</h3>
+            <p class="text-lg opacity-90 mb-6">Optimización de Consumo de Combustible - SLB México</p>
+            <p class="text-sm opacity-75">
+                Presentación Final | Proyecto de Topología | 2025
+            </p>
+        </div>
+    </footer>
+
+    <!-- Importar datos embebidos -->
+    <script src="final_presentation_data/prediction_data.js"></script>
+    
+    <script>
+        // Función simplificada para obtener los datos (ya no necesita fetch)
+        function loadPredictionData() {
+            console.log('📊 Cargando datos embebidos...');
+            return getPredictionData(); // Función definida en prediction_data.js
+        }
+
+        // Función para agregar datos por mes
+        function aggregateDataByMonth(data) {
+            const monthlyData = {};
+            
+            data.forEach(item => {
+                const key = `${item.year}-${item.month.toString().padStart(2, '0')}`;
+                if (!monthlyData[key]) {
+                    monthlyData[key] = {
+                        date: key,
+                        realValues: [],
+                        predValues: []
+                    };
+                }
+                monthlyData[key].realValues.push(item.yReal);
+                monthlyData[key].predValues.push(item.yPred);
+            });
+
+            // calcular promedios mensuales
+            const aggregatedData = Object.keys(monthlyData).map(key => {
+                const monthData = monthlyData[key];
+                return {
+                    date: key,
+                    avgReal: monthData.realValues.reduce((sum, val) => sum + val, 0) / monthData.realValues.length,
+                    avgPred: monthData.predValues.reduce((sum, val) => sum + val, 0) / monthData.predValues.length
+                };
+            });
+
+            return aggregatedData.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        // función para calcular métricas
+        function calculateMetrics(data) {
+            const n = data.length;
+            let mae = 0, mse = 0, ss_res = 0, ss_tot = 0;
+            
+            const realMean = data.reduce((sum, item) => sum + item.yReal, 0) / n;
+            
+            data.forEach(item => {
+                const error = Math.abs(item.yReal - item.yPred);
+                mae += error;
+                mse += Math.pow(item.yReal - item.yPred, 2);
+                ss_res += Math.pow(item.yReal - item.yPred, 2);
+                ss_tot += Math.pow(item.yReal - realMean, 2);
+            });
+            
+            mae /= n;
+            const rmse = Math.sqrt(mse / n);
+            const r2 = 1 - (ss_res / ss_tot);
+            
+            return { mae, rmse, r2 };
+        }
+
+        // crear gráfico de serie temporal
+        function createTimeSeriesChart() {
+            console.log('Iniciando creación del gráfico...');
+            const data = loadPredictionData();
+            
+            if (data.length === 0) {
+                console.error('❌ No se pudieron cargar datos embebidos');
+                return;
+            }
+            
+            console.log('Datos cargados:', data.length, 'registros');
+            const aggregatedData = aggregateDataByMonth(data);
+            console.log('Datos agregados:', aggregatedData);
+            
+            const metrics = calculateMetrics(data);
+            console.log('Métricas calculadas:', metrics);
+            
+            // Ya no actualizamos las métricas en la UI ya que se muestran estáticamente
+            
+            const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+            console.log('Contexto del canvas obtenido:', ctx);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: aggregatedData.map(d => d.date),
+                    datasets: [{
+                        label: 'Rendimiento Real',
+                        data: aggregatedData.map(d => d.avgReal),
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: 'Rendimiento Predicho',
+                        data: aggregatedData.map(d => d.avgPred),
+                        borderColor: '#EF4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Evolución Temporal del Rendimiento de Combustible',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Período (Año-Mes)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Rendimiento Promedio (km/L)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // animaciones de scroll
+        function handleScrollAnimations() {
+            const sections = document.querySelectorAll('.section-fade');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        }
+
+        // smooth scrolling para navegación
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // funciones para la calculadora predictiva
+        const API_BASE_URL = 'http://localhost:5001';
+        
+        async function loadCategoricalOptions() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/options`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const options = data.data;
+                    const fieldMappings = {
+                        'Id Región': 'id_region',
+                        'Cliente': 'cliente',
+                        'Division': 'division',
+                        'BL': 'bl',
+                        'Mercancía': 'mercancia',
+                        'Conductor': 'conductor',
+                        'Vehículo_Corto': 'vehiculo_corto'
+                    };
+                    
+                    // poblar los dropdowns
+                    for (const [apiField, htmlId] of Object.entries(fieldMappings)) {
+                        const select = document.getElementById(htmlId);
+                        if (select && options[apiField]) {
+                            // limpiar opciones existentes
+                            select.innerHTML = '<option value="">Seleccionar...</option>';
+                            
+                            // agregar nuevas opciones
+                            options[apiField].forEach(value => {
+                                const option = document.createElement('option');
+                                option.value = value;
+                                option.textContent = value;
+                                select.appendChild(option);
+                            });
+                        }
+                    }
+                } else {
+                    console.error('Error cargando opciones:', data.error);
+                    showPredictionError(data.error || 'Error cargando opciones');
+                }
+            } catch (error) {
+                console.error('Error conectando con API:', error);
+                showPredictionError('Error conectando con el servidor. Por favor, intenta de nuevo más tarde.');
+            }
+        }
+        
+        function showPredictionLoading() {
+            document.getElementById('predictionResult').classList.add('hidden');
+            document.getElementById('predictionError').classList.add('hidden');
+            document.getElementById('predictionLoading').classList.remove('hidden');
+        }
+        
+        function hidePredictionLoading() {
+            document.getElementById('predictionLoading').classList.add('hidden');
+        }
+        
+        function showPredictionResult(result) {
+            hidePredictionLoading();
+            
+            document.getElementById('predictedEfficiency').textContent = result.rendimiento_real_predicho;
+            document.getElementById('assignedCluster').textContent = result.cluster_asignado;
+            
+            // clasificar eficiencia
+            const efficiency = result.rendimiento_real_predicho;
+            let efficiencyClass = '';
+            if (efficiency >= 10) {
+                efficiencyClass = 'Excelente';
+            } else if (efficiency >= 7) {
+                efficiencyClass = 'Bueno';
+            } else if (efficiency >= 5) {
+                efficiencyClass = 'Regular';
+            } else {
+                efficiencyClass = 'Bajo';
+            }
+            
+            document.getElementById('efficiencyClass').textContent = efficiencyClass;
+            
+            // explicacion
+            const explanation = `El modelo predice un rendimiento REAL de ${result.rendimiento_real_predicho} km/L (vs ${result.rendimiento_esperado} km/L esperado) basándose en el cluster topológico ${result.cluster_asignado}. Este cluster representa transacciones con características similares en el espacio de datos categóricos.`;
+            document.getElementById('predictionExplanation').textContent = explanation;
+            
+            document.getElementById('predictionResult').classList.remove('hidden');
+        }
+        
+        function showPredictionError(message) {
+            hidePredictionLoading();
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('predictionError').classList.remove('hidden');
+        }
+        
+        async function makePrediction(formData) {
+            try {
+                // separar datos categóricos y numéricos
+                const categorical_data = {
+                    'Id Región': formData['Id Región'],
+                    'Cliente': formData['Cliente'],
+                    'Division': formData['Division'],
+                    'BL': formData['BL'],
+                    'Mercancía': formData['Mercancía'],
+                    'Conductor': formData['Conductor'],
+                    'Vehículo_Corto': formData['Vehículo_Corto']
+                };
+
+                const requestData = {
+                    categorical_data: categorical_data,
+                    recorrido: formData.recorrido,
+                    rendimiento_esperado: formData.rendimiento_esperado
+                };
+
+                const response = await fetch(`${API_BASE_URL}/api/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showPredictionResult(data.data);
+                } else {
+                    showPredictionError(data.error || 'Error desconocido en la predicción');
+                }
+            } catch (error) {
+                console.error('Error en predicción:', error);
+                showPredictionError('Error conectando con el servidor. Por favor, intenta de nuevo más tarde.');
+            }
+        }
+        
+        function handlePredictionForm() {
+            const form = document.getElementById('predictionForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // recolectar datos del formulario
+                const formData = {
+                    'Id Región': document.getElementById('id_region').value,
+                    'Cliente': document.getElementById('cliente').value,
+                    'Division': document.getElementById('division').value,
+                    'BL': document.getElementById('bl').value,
+                    'Mercancía': document.getElementById('mercancia').value,
+                    'Conductor': document.getElementById('conductor').value,
+                    'Vehículo_Corto': document.getElementById('vehiculo_corto').value,
+                    'recorrido': parseFloat(document.getElementById('recorrido').value),
+                    'rendimiento_esperado': parseFloat(document.getElementById('rendimiento_esperado').value)
+                };
+                
+                // validar campos
+                const requiredCategorical = ['Id Región', 'Cliente', 'Division', 'BL', 'Mercancía', 'Conductor', 'Vehículo_Corto'];
+                const missingFields = requiredCategorical.filter(field => !formData[field]);
+                
+                if (missingFields.length > 0) {
+                    showPredictionError(`Por favor completa los siguientes campos: ${missingFields.join(', ')}`);
+                    return;
+                }
+                
+                if (!formData.recorrido || !formData.rendimiento_esperado) {
+                    showPredictionError('Por favor ingresa el recorrido y el rendimiento esperado');
+                    return;
+                }
+                
+                if (formData.recorrido <= 0 || formData.recorrido > 10000) {
+                    showPredictionError('El recorrido debe estar entre 1 y 10,000 km');
+                    return;
+                }
+                
+                if (formData.rendimiento_esperado <= 0 || formData.rendimiento_esperado > 50) {
+                    showPredictionError('El rendimiento esperado debe estar entre 1 y 50 km/L');
+                    return;
+                }
+                
+                // mostrar loading y hacer prediccion
+                showPredictionLoading();
+                makePrediction(formData);
+            });
+        }
+
+        // inicializar cuando la página cargue
+        document.addEventListener('DOMContentLoaded', function() {
+            createTimeSeriesChart();
+            handleScrollAnimations();
+            loadCategoricalOptions();
+            handlePredictionForm();
+        });
+    </script>
+</body>
+</html>

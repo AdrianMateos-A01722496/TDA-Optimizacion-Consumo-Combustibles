@@ -1,0 +1,27 @@
+{
+  "best_model": "RandomForest",
+  "best_r2": 0.6582701602144191,
+  "best_params": {
+    "regressor__max_depth": 11,
+    "regressor__max_features": "sqrt",
+    "regressor__min_samples_leaf": 2,
+    "regressor__min_samples_split": 11,
+    "regressor__n_estimators": 375
+  },
+  "all_results": {
+    "RandomForest": {
+      "MSE": 3.299193749600779,
+      "RMSE": 1.8163682857836896,
+      "MAE": 1.3570810387860568,
+      "R\u00b2": 0.6582701602144191,
+      "MAPE": 32.604105996609825
+    },
+    "Ensemble": {
+      "MSE": 3.299193749600779,
+      "RMSE": 1.8163682857836896,
+      "MAE": 1.3570810387860568,
+      "R\u00b2": 0.6582701602144191,
+      "MAPE": 32.604105996609825
+    }
+  }
+}
